@@ -106,10 +106,12 @@ type peer struct {
 	txAnnounce  chan []common.Hash                   // Channel used to queue transaction announcement requests
 	getPooledTx func(common.Hash) *types.Transaction // Callback used to retrieve transaction from txpool
 
+	posv bool // Chain is POSV (Viction); outbound headers/blocks use the 18-field PoSV RLP encoding
+
 	term chan struct{} // Termination channel to stop the broadcaster
 }
 
-func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(hash common.Hash) *types.Transaction) *peer {
+func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(hash common.Hash) *types.Transaction, posv bool) *peer {
 	return &peer{
 		Peer:            p,
 		rw:              rw,
@@ -122,6 +124,7 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(ha
 		txBroadcast:     make(chan []common.Hash),
 		txAnnounce:      make(chan []common.Hash),
 		getPooledTx:     getPooledTx,
+		posv:            posv,
 		term:            make(chan struct{}),
 	}
 }
@@ -473,7 +476,9 @@ func (p *peer) SendNewBlock(block *types.Block, td *big.Int) error {
 	}
 	p.knownBlocks.Add(block.Hash())
 	// Ensure the block header is marked as PoSV so it encodes with 18 fields.
-	block.SetPosv(true)
+	if p.posv {
+		block.SetPosv(true)
+	}
 	return p2p.Send(p.rw, NewBlockMsg, []interface{}{block, td})
 }
 
@@ -496,8 +501,10 @@ func (p *peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 func (p *peer) SendBlockHeaders(headers []*types.Header) error {
 	// Ensure all headers are marked as PoSV so they encode with 18 fields.
 	// This is needed for compatibility with victionchain peers which expect 18 fields.
-	for _, h := range headers {
-		h.Posv = true
+	if p.posv {
+		for _, h := range headers {
+			h.Posv = true
+		}
 	}
 	return p2p.Send(p.rw, BlockHeadersMsg, headers)
 }

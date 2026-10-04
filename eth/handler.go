@@ -80,6 +80,8 @@ type ProtocolManager struct {
 	txFetcher    *fetcher.TxFetcher
 	peers        *peerSet
 
+	posv bool // Chain is POSV (Viction); outbound headers/blocks use the 18-field PoSV RLP encoding
+
 	eventMux      *event.TypeMux
 	txsCh         chan core.NewTxsEvent
 	txsSub        event.Subscription
@@ -110,6 +112,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 		txpool:     txpool,
 		blockchain: blockchain,
 		chaindb:    chaindb,
+		posv:       config.IsPosv(),
 		peers:      newPeerSet(),
 		whitelist:  whitelist,
 		txsyncCh:   make(chan *txsync),
@@ -291,7 +294,7 @@ func (pm *ProtocolManager) Stop() {
 }
 
 func (pm *ProtocolManager) newPeer(pv int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(hash common.Hash) *types.Transaction) *peer {
-	return newPeer(pv, p, rw, getPooledTx)
+	return newPeer(pv, p, rw, getPooledTx, pm.posv)
 }
 
 func (pm *ProtocolManager) runPeer(p *peer) error {
