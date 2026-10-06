@@ -107,8 +107,6 @@ type peer struct {
 	txAnnounce  chan []common.Hash                   // Channel used to queue transaction announcement requests
 	getPooledTx func(common.Hash) *types.Transaction // Callback used to retrieve transaction from txpool
 
-	posv bool // Chain is POSV (Viction); outbound headers/blocks use the 18-field PoSV RLP encoding
-
 	term chan struct{} // Termination channel to stop the broadcaster
 }
 
@@ -126,7 +124,6 @@ func newPeer(version int, p *p2p.Peer, rw p2p.MsgReadWriter, getPooledTx func(ha
 		txBroadcast:     make(chan []common.Hash),
 		txAnnounce:      make(chan []common.Hash),
 		getPooledTx:     getPooledTx,
-		posv:            posv,
 		term:            make(chan struct{}),
 	}
 }
