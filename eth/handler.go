@@ -99,6 +99,7 @@ type ProtocolManager struct {
 
 	// Test fields or hooks
 	broadcastTxAnnouncesOnly bool // Testing field, disable transaction propagation
+	posv                     bool // Whether this node runs a PoSV/Viction chain (controls wire encoding)
 }
 
 // NewProtocolManager returns a new Ethereum sub protocol manager. The Ethereum sub protocol manages peers capable
@@ -115,6 +116,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 		posv:       config.IsPosv(),
 		peers:      newPeerSet(),
 		whitelist:  whitelist,
+		posv:       config != nil && config.Posv != nil,
 		txsyncCh:   make(chan *txsync),
 		quitSync:   make(chan struct{}),
 	}
